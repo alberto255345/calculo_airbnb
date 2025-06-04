@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora Airbnb (Regra de Três)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px;
+    }
+    .container {
+      background: #fff;
+      padding: 24px 32px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-width: 400px;
+      width: 100%;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 16px;
+      color: #444;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.95rem;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 10px;
+      background: #1976d2;
+      color: #fff;
+      font-size: 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #155a9c;
+    }
+    .resultado {
+      margin-top: 24px;
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      padding: 16px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .resultado p {
+      margin: 6px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Calculadora Airbnb (Regra de Três)</h1>
+
+    <!-- Valor total que o hóspede pagará -->
+    <label for="guestTotal">Valor que o hóspede pagará (R$)</label>
+    <input
+      type="number"
+      id="guestTotal"
+      placeholder="Ex: 1700.00"
+      step="0.01"
+      value="1700.00"
+    />
+
+    <!-- Percentual de taxa do hóspede (pré-preenchido) -->
+    <label for="guestPct">Taxa do hóspede (%)</label>
+    <input
+      type="number"
+      id="guestPct"
+      step="0.01"
+      value="14.12"
+    />
+
+    <!-- Percentual de taxa do anfitrião (Airbnb) (pré-preenchido) -->
+    <label for="hostPct">Taxa do anfitrião (%)</label>
+    <input
+      type="number"
+      id="hostPct"
+      step="0.01"
+      value="3.00"
+    />
+
+    <button onclick="calcular()">Calcular</button>
+
+    <div id="output" class="resultado" style="display: none;">
+      <p><strong>Subtotal (valor do anúncio):</strong> R$ <span id="subtotal"></span></p>
+      <p><strong>Taxa do hóspede:</strong> R$ <span id="guestFee"></span> (<span id="guestPctOut"></span> %)</p>
+      <p><strong>Total pago pelo hóspede:</strong> R$ <span id="guestTotalOut"></span></p>
+      <hr />
+      <p><strong>Taxa do anfitrião (3% sobre subtotal):</strong> R$ <span id="hostFee"></span> (<span id="hostPctOut"></span> %)</p>
+      <p><strong>Valor líquido para o anfitrião:</strong> R$ <span id="netHost"></span></p>
+    </div>
+  </div>
+
+  <script>
+    function calcular() {
+      // 1. Ler valores de entrada
+      const guestTotalInput = parseFloat(document.getElementById('guestTotal').value) || 0;
+      const guestPctInput = parseFloat(document.getElementById('guestPct').value) || 0;
+      const hostPctInput  = parseFloat(document.getElementById('hostPct').value)  || 0;
+
+      // 2. Converter porcentagens em fator decimal
+      const guestPct = guestPctInput / 100;
+      const hostPct  = hostPctInput  / 100;
+
+      // 3. Determinar o subtotal (X) tal que X + (X * guestPct) = guestTotalInput
+      const subtotal = guestTotalInput / (1 + guestPct);
+
+      // 4. Calcular taxa do hóspede
+      const guestFee = subtotal * guestPct;
+
+      // 5. Total pago pelo hóspede (para exibir confirmação)
+      const totalGuest = subtotal + guestFee;
+
+      // 6. Calcular taxa do anfitrião
+      const hostFee = subtotal * hostPct;
+
+      // 7. Calcular líquido que fica para o anfitrião
+      const netHost = subtotal - hostFee;
+
+      // 8. Exibir resultados, formatando com duas casas decimais
+      document.getElementById('subtotal').innerText     = subtotal.toFixed(2);
+      document.getElementById('guestFee').innerText      = guestFee.toFixed(2);
+      document.getElementById('guestPctOut').innerText   = (guestPct * 100).toFixed(2);
+      document.getElementById('guestTotalOut').innerText = totalGuest.toFixed(2);
+      document.getElementById('hostFee').innerText       = hostFee.toFixed(2);
+      document.getElementById('hostPctOut').innerText    = (hostPct * 100).toFixed(2);
+      document.getElementById('netHost').innerText       = netHost.toFixed(2);
+
+      // 9. Mostrar o bloco de saída
+      document.getElementById('output').style.display = 'block';
+    }
+  </script>
+
+</body>
+</html>
