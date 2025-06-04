@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calculadora Airbnb (Regra de Três) com Imposto</title>
+  <title>Calculadora Airbnb (Regra de Três) com Imposto & IVA</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -72,7 +72,7 @@
 <body>
 
   <div class="container">
-    <h1>Calculadora Airbnb (Regra de Três) com Imposto</h1>
+    <h1>Calculadora Airbnb (Regra de Três) com Imposto &amp; IVA</h1>
 
     <!-- Escolher tipo de valor de entrada -->
     <label for="inputType">Tipo de valor de entrada</label>
@@ -119,6 +119,15 @@
       value="3.00"
     />
 
+    <!-- Percentual de IVA aplicado sobre a taxa do anfitrião -->
+    <label for="ivaPct">Alíquota de IVA sobre taxa do anfitrião (%)</label>
+    <input
+      type="number"
+      id="ivaPct"
+      step="0.01"
+      value="13.77"
+    />
+
     <button onclick="calcular()">Calcular</button>
 
     <div id="output" class="resultado" style="display: none;">
@@ -127,7 +136,10 @@
       <p><strong>Imposto de ocupação:</strong> R$ <span id="taxFeeOut"></span> (<span id="taxPctOut"></span> %)</p>
       <p><strong>Total pago pelo hóspede:</strong> R$ <span id="guestTotalOut"></span></p>
       <hr />
-      <p><strong>Taxa do anfitrião:</strong> R$ <span id="hostFeeOut"></span> (<span id="hostPctOut"></span> %)</p>
+      <p>
+        <strong>Taxa do anfitrião (3.0% + IVA):</strong>
+        R$ <span id="hostFeeOut"></span> (<span id="hostPctOut"></span> % + <span id="ivaPctOut"></span> %)
+      </p>
       <p><strong>Valor líquido para o anfitrião:</strong> R$ <span id="netHostOut"></span></p>
     </div>
   </div>
@@ -159,51 +171,78 @@
       // 1. Ler valores de entrada
       const tipo     = inputTypeEl.value;
       const valInput = parseFloat(valueInputEl.value) || 0;
+
       const guestPct = (parseFloat(document.getElementById('guestPct').value) || 0) / 100;
       const taxPct   = (parseFloat(document.getElementById('taxPct').value)   || 0) / 100;
       const hostPct  = (parseFloat(document.getElementById('hostPct').value)  || 0) / 100;
+      const ivaPct   = (parseFloat(document.getElementById('ivaPct').value)   || 0) / 100;
 
-      let subtotal, guestFee, taxFee, guestTotal, hostFee, netHost;
+      let subtotal, guestFee, taxFee, guestTotal;
+      let hostBaseFee, ivaFee, hostFee, netHost;
 
       if (tipo === 'guestTotal') {
-        // Total pago pelo hóspede = subtotal + taxa hóspede + imposto
-        // guestTotal = subtotal * (1 + guestPct + taxPct)
+        // Total pago pelo hóspede = subtotal + (subtotal × guestPct) + (subtotal × taxPct)
         guestTotal = valInput;
         subtotal   = guestTotal / (1 + guestPct + taxPct);
-        guestFee   = subtotal * guestPct;
-        taxFee     = subtotal * taxPct;
-        hostFee    = subtotal * hostPct;
-        netHost    = subtotal - hostFee;
-      }
-      else if (tipo === 'netHost') {
-        // Valor líquido para o anfitrião = subtotal - taxa anfitrião
-        // netHost = subtotal * (1 - hostPct)
-        netHost  = valInput;
-        subtotal = netHost / (1 - hostPct);
-        hostFee  = subtotal * hostPct;
+
         guestFee = subtotal * guestPct;
         taxFee   = subtotal * taxPct;
+
+        // Calcular taxa do anfitrião com IVA
+        hostBaseFee = subtotal * hostPct;
+        ivaFee      = hostBaseFee * ivaPct;
+        hostFee     = hostBaseFee + ivaFee;
+
+        netHost = subtotal - hostFee;
+      }
+      else if (tipo === 'netHost') {
+        // Valor líquido para o anfitrião = subtotal − (subtotal × hostPct) − (subtotal × hostPct × ivaPct)
+        netHost  = valInput;
+        // Digamos: hostBaseFee = subtotal × hostPct; ivaFee = hostBaseFee × ivaPct
+        //      netHost = subtotal − hostBaseFee − ivaFee
+        //      netHost = subtotal − hostBaseFee × (1 + ivaPct)
+        //      netHost = subtotal − subtotal × hostPct × (1 + ivaPct)
+        //      netHost = subtotal × [1 − hostPct × (1 + ivaPct)]
+        // ⇒   subtotal = netHost / [1 − hostPct × (1 + ivaPct)]
+        subtotal = netHost / (1 - hostPct * (1 + ivaPct));
+
+        hostBaseFee = subtotal * hostPct;
+        ivaFee      = hostBaseFee * ivaPct;
+        hostFee     = hostBaseFee + ivaFee;
+
+        guestFee   = subtotal * guestPct;
+        taxFee     = subtotal * taxPct;
         guestTotal = subtotal + guestFee + taxFee;
       }
       else {
-        // Já temos o subtotal
-        subtotal   = valInput;
-        guestFee   = subtotal * guestPct;
-        taxFee     = subtotal * taxPct;
+        // Tipo "subtotal": já temos subtotal
+        subtotal = valInput;
+
+        guestFee = subtotal * guestPct;
+        taxFee   = subtotal * taxPct;
         guestTotal = subtotal + guestFee + taxFee;
-        hostFee    = subtotal * hostPct;
-        netHost    = subtotal - hostFee;
+
+        hostBaseFee = subtotal * hostPct;
+        ivaFee      = hostBaseFee * ivaPct;
+        hostFee     = hostBaseFee + ivaFee;
+
+        netHost = subtotal - hostFee;
       }
 
-      // Exibir resultados formatados
+      // Formatar e exibir resultados
       document.getElementById('subtotalOut').innerText   = subtotal.toFixed(2);
       document.getElementById('guestFeeOut').innerText   = guestFee.toFixed(2);
       document.getElementById('guestPctOut').innerText   = (guestPct * 100).toFixed(2);
+
       document.getElementById('taxFeeOut').innerText     = taxFee.toFixed(2);
       document.getElementById('taxPctOut').innerText     = (taxPct * 100).toFixed(2);
+
       document.getElementById('guestTotalOut').innerText = guestTotal.toFixed(2);
+
       document.getElementById('hostFeeOut').innerText    = hostFee.toFixed(2);
       document.getElementById('hostPctOut').innerText    = (hostPct * 100).toFixed(2);
+      document.getElementById('ivaPctOut').innerText     = (ivaPct * 100).toFixed(2);
+
       document.getElementById('netHostOut').innerText    = netHost.toFixed(2);
 
       document.getElementById('output').style.display = 'block';
